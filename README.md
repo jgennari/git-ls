@@ -12,13 +12,11 @@ Usage
 ------
 ```
 gitdir <path> [options...]
+
+[options]
+   -r    Recusively search subdirectories
 ```
 
-Options
-------
-```
--r    Recusively search subdirectories
-```
 
 Git Alias
 ------
