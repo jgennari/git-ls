@@ -19,3 +19,12 @@ Options
 ```
 -r    Recusively search subdirectories
 ```
+
+Git Alias
+------
+Add the following lines to your global `.gitconfig` file to call an alias directly from `git` like `git dir`. Make sure the executable is accesible from your PATH.
+
+```
+[alias]
+        dir = "!gitdir"
+```
