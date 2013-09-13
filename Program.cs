@@ -133,7 +133,7 @@ namespace GitDir
                     else if (branch.Contains("...") && branch.Contains("[behind"))
                     {
                         branch = branch.Substring(0, branch.IndexOf("..."));
-                        branchcolor = ConsoleColor.DarkRed;
+                        branchcolor = ConsoleColor.Red;
                     }
 
                     var added = new[] { GitStatus.Added };
