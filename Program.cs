@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using System.IO;
 using System.Diagnostics;
 
-namespace GitDir
+namespace gitls
 {
     public enum GitStatus
     {
