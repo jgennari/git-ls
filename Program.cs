@@ -93,103 +93,110 @@ namespace GitDir
                 var dirs = Directory.GetDirectories(dir, "*", search);
 
                 // Find each directory where a .git subdirectory exists
-                foreach (var subDirectory in dirs.Where(p => Directory.Exists(Path.Combine(p, ".git"))))
+                foreach (var subDirectory in dirs)
                 {
-                    // Fire a proccess to get the git status
-                    Process pStatus = new Process
+                    if (Directory.Exists(Path.Combine(subDirectory, ".git")))
                     {
-                        StartInfo = new ProcessStartInfo
+                        // Fire a proccess to get the git status
+                        Process pStatus = new Process
                         {
-                            UseShellExecute = false,
-                            RedirectStandardOutput = true,
-                            WorkingDirectory = subDirectory,
-                            FileName = "git.exe",
-                            Arguments = "status -s -b" // -s = short, -b = branch
+                            StartInfo = new ProcessStartInfo
+                            {
+                                UseShellExecute = false,
+                                RedirectStandardOutput = true,
+                                WorkingDirectory = subDirectory,
+                                FileName = "git.exe",
+                                Arguments = "status -s -b" // -s = short, -b = branch
+                            }
+                        };
+
+                        pStatus.Start();
+                        var outputStatus = pStatus.StandardOutput.ReadToEnd().Split(Environment.NewLine.ToCharArray()).Select(l => new GitStatusEntry(l));
+                        pStatus.WaitForExit();
+
+                        // Branch name and status starts with ##
+                        var branch = outputStatus.Single(s => s.IndexStatus == GitStatus.Comment).Value;
+                    
+                        // Save the console color before we change it
+                        var firstcolor = Console.ForegroundColor;
+
+                        var branchcolor = ConsoleColor.Cyan;
+
+                        // Look for the ahead/behind keywords and set the color, also eliminate the trailing text
+                        if (branch.Contains("Initial commit on"))
+                        {
+                            branch = branch.Replace("Initial commit on ", "");
                         }
-                    };
+                        else if (branch.Contains("...") && branch.Contains("[ahead"))
+                        {
+                            branch = branch.Substring(0, branch.IndexOf("..."));
+                            branchcolor = ConsoleColor.Green;
+                        }
+                        else if (branch.Contains("...") && branch.Contains("[behind"))
+                        {
+                            branch = branch.Substring(0, branch.IndexOf("..."));
+                            branchcolor = ConsoleColor.Red;
+                        }
 
-                    pStatus.Start();
-                    var outputStatus = pStatus.StandardOutput.ReadToEnd().Split(Environment.NewLine.ToCharArray()).Select(l => new GitStatusEntry(l));
-                    pStatus.WaitForExit();
+                        var added = new[] { GitStatus.Added };
+                        var modified = new[] { GitStatus.Modified, GitStatus.Renamed, GitStatus.Updated, GitStatus.Copied };
+                        var deleted = new[] { GitStatus.Deleted };
 
-                    // Branch name and status starts with ##
-                    var branch = outputStatus.Single(s => s.IndexStatus == GitStatus.Comment).Value;
+                        // Staged changes
+                        var addedindexcount = outputStatus.Where(s => added.Contains(s.IndexStatus)).Count();
+                        var modifiedindexcount = outputStatus.Where(s => modified.Contains(s.IndexStatus)).Count();
+                        var deletedindexcount = outputStatus.Where(s => deleted.Contains(s.IndexStatus)).Count();
+
+                        // Work tree changes
+                        var addedworkcount = outputStatus.Where(s => added.Contains(s.WorkTreeStatus)).Count();
+                        var modifiedworkcount = outputStatus.Where(s => modified.Contains(s.WorkTreeStatus)).Count();
+                        var deletedworkcount = outputStatus.Where(s => deleted.Contains(s.WorkTreeStatus)).Count();
+
+                        var untrackedcount = outputStatus.Where(s => s.IndexStatus == GitStatus.Untracked).Count();
                     
-                    // Save the console color before we change it
-                    var firstcolor = Console.ForegroundColor;
+                        // Output the directory name
+                        Console.Write(subDirectory);
 
-                    var branchcolor = ConsoleColor.Cyan;
-
-                    // Look for the ahead/behind keywords and set the color, also eliminate the trailing text
-                    if (branch.Contains("Initial commit on"))
-                    {
-                        branch = branch.Replace("Initial commit on ", "");
-                    }
-                    else if (branch.Contains("...") && branch.Contains("[ahead"))
-                    {
-                        branch = branch.Substring(0, branch.IndexOf("..."));
-                        branchcolor = ConsoleColor.Green;
-                    }
-                    else if (branch.Contains("...") && branch.Contains("[behind"))
-                    {
-                        branch = branch.Substring(0, branch.IndexOf("..."));
-                        branchcolor = ConsoleColor.Red;
-                    }
-
-                    var added = new[] { GitStatus.Added };
-                    var modified = new[] { GitStatus.Modified, GitStatus.Renamed, GitStatus.Updated, GitStatus.Copied };
-                    var deleted = new[] { GitStatus.Deleted };
-
-                    // Staged changes
-                    var addedindexcount = outputStatus.Where(s => added.Contains(s.IndexStatus)).Count();
-                    var modifiedindexcount = outputStatus.Where(s => modified.Contains(s.IndexStatus)).Count();
-                    var deletedindexcount = outputStatus.Where(s => deleted.Contains(s.IndexStatus)).Count();
-
-                    // Work tree changes
-                    var addedworkcount = outputStatus.Where(s => added.Contains(s.WorkTreeStatus)).Count();
-                    var modifiedworkcount = outputStatus.Where(s => modified.Contains(s.WorkTreeStatus)).Count();
-                    var deletedworkcount = outputStatus.Where(s => deleted.Contains(s.WorkTreeStatus)).Count();
-
-                    var untrackedcount = outputStatus.Where(s => s.IndexStatus == GitStatus.Untracked).Count();
-                    
-                    // Output the directory name
-                    Console.Write(subDirectory);
-
-                    // Change the color of the brackets
-                    Console.ForegroundColor = ConsoleColor.Yellow;
-                    Console.Write(" [");
-
-                    // Write the branch based on the color decided above
-                    Console.ForegroundColor = branchcolor;
-                    Console.Write(branch);
-
-                    // If any files in the index are modified
-                    if (addedindexcount + modifiedindexcount + deletedworkcount > 0)
-                    {
-                        Console.ForegroundColor = ConsoleColor.DarkGreen;
-                        Console.Write(string.Format(" +{0} ~{1} -{2}", addedindexcount, modifiedindexcount, deletedworkcount));
-                    }
-
-                    // If files in both the work tree and index are modified, introduce a seporator
-                    if (addedworkcount + modifiedworkcount + deletedworkcount + untrackedcount > 0 && addedindexcount + modifiedindexcount + deletedworkcount > 0)
-                    {
+                        // Change the color of the brackets
                         Console.ForegroundColor = ConsoleColor.Yellow;
-                        Console.Write(" |");
-                    }
+                        Console.Write(" [");
 
-                    // If any files in the work tree are modified
-                    if (addedworkcount + modifiedworkcount + deletedworkcount + untrackedcount > 0)
+                        // Write the branch based on the color decided above
+                        Console.ForegroundColor = branchcolor;
+                        Console.Write(branch);
+
+                        // If any files in the index are modified
+                        if (addedindexcount + modifiedindexcount + deletedworkcount > 0)
+                        {
+                            Console.ForegroundColor = ConsoleColor.DarkGreen;
+                            Console.Write(string.Format(" +{0} ~{1} -{2}", addedindexcount, modifiedindexcount, deletedworkcount));
+                        }
+
+                        // If files in both the work tree and index are modified, introduce a seporator
+                        if (addedworkcount + modifiedworkcount + deletedworkcount + untrackedcount > 0 && addedindexcount + modifiedindexcount + deletedworkcount > 0)
+                        {
+                            Console.ForegroundColor = ConsoleColor.Yellow;
+                            Console.Write(" |");
+                        }
+
+                        // If any files in the work tree are modified
+                        if (addedworkcount + modifiedworkcount + deletedworkcount + untrackedcount > 0)
+                        {
+                            Console.ForegroundColor = ConsoleColor.DarkRed;
+                            Console.Write(string.Format(" +{0} ~{1} -{2}", addedworkcount + untrackedcount, modifiedworkcount, deletedworkcount));
+                        }
+
+                        // End the branches
+                        Console.ForegroundColor = ConsoleColor.Yellow;
+                        Console.WriteLine("]");
+
+                        // Reset the color for the user
+                        Console.ForegroundColor = firstcolor;
+                    }                    
+                    else if (args.Contains("-e"))
                     {
-                        Console.ForegroundColor = ConsoleColor.DarkRed;
-                        Console.Write(string.Format(" +{0} ~{1} -{2}", addedworkcount + untrackedcount, modifiedworkcount, deletedworkcount));
+                        Console.WriteLine(subDirectory);
                     }
-
-                    // End the branches
-                    Console.ForegroundColor = ConsoleColor.Yellow;
-                    Console.WriteLine("]");
-
-                    // Reset the color for the user
-                    Console.ForegroundColor = firstcolor;
                 }
             }
         }

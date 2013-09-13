@@ -16,6 +16,7 @@ gitdir.exe <path> [options...]
 [options]
    path  (optional) Directory to search, if blank, will use current directory
    -r    Recusively search subdirectories
+   -e    Show non-Git directories in results
 ```
 
 
