@@ -11,9 +11,10 @@ GitDir is a Windows tool that helps manage directories full of Git-subdirectorie
 Usage
 ------
 ```
-gitdir <path> [options...]
+gitdir.exe <path> [options...]
 
 [options]
+   path  (optional) Directory to search, if blank, will use current directory
    -r    Recusively search subdirectories
 ```
 
