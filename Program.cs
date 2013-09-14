@@ -42,14 +42,24 @@ namespace gitls
                         // Save the console color before we change it
                         var firstcolor = Console.ForegroundColor;
 
-                        var branchcolor = ConsoleColor.Cyan;
-
                         // Change the color of the brackets
                         Console.ForegroundColor = ConsoleColor.Yellow;
                         Console.Write(" [");
 
-                        // Write the branch based on the color decided above
-                        Console.ForegroundColor = branchcolor;
+                        // Write the branch, color determined by status
+                        switch (subdir.BranchStatus)
+                        {
+                            case GitBranchStatus.Ahead:
+                                Console.ForegroundColor = ConsoleColor.Green;
+                                break;
+                            case GitBranchStatus.Behind:
+                                Console.ForegroundColor = ConsoleColor.Red;
+                                break;
+                            default:
+                                Console.ForegroundColor = ConsoleColor.Cyan;
+                                break;
+                        }
+
                         Console.Write(subdir.BranchName);
 
                         // If any files in the index are modified
