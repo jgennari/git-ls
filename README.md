@@ -25,5 +25,5 @@ Add the following lines to your global `.gitconfig` file to call an alias direct
 
 ```
 [alias]
-        dir = "!git-ls"
+        ls = "!git-ls"
 ```
