@@ -33,7 +33,6 @@ namespace gitls
                 // Find each directory where a .git subdirectory exists
                 Parallel.ForEach(dirs.Select(d => new GitDirectory(d)), subdir =>
                 {
-
                     if (subdir.IsGitDirectory)
                     {
                         // Output the directory name
