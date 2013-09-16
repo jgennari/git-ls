@@ -8,7 +8,6 @@ using System.Diagnostics;
 
 namespace gitls
 {
-
     class Program
     {
         static void Main(string[] args)
@@ -27,9 +26,11 @@ namespace gitls
                 if (args.Contains("-r"))
                     search = SearchOption.AllDirectories;
 
-                // Load all directories from the current directory
-                var dirs = Directory.GetDirectories(dir, "*", search);
+                IEnumerable<string> dirs = new List<string>();
 
+                // Load all directories from the current directory
+                dirs = DirectoryTools.GetDirectories(dir, search);
+                
                 // Find each directory where a .git subdirectory exists
                 Parallel.ForEach(dirs.Select(d => new GitDirectory(d)), subdir =>
                 {
