@@ -10,28 +10,32 @@ namespace gitls
     {
 
         public static IEnumerable<string> GetDirectories(string path, SearchOption option)
-        {         
-            var dirs = new List<string>();
+        {
+            IEnumerable<string> dirs = null;
 
             try
             {
-                dirs = Directory.GetDirectories(path).ToList();
+                dirs = Directory.EnumerateDirectories(path);
+                //dirs = Directory.GetDirectories(path).ToList();
             }
             catch (UnauthorizedAccessException)
             {
             }
 
-            foreach (var dir in dirs)
+            if (dirs != null)
             {
-                if (option == SearchOption.AllDirectories)
+                foreach (var dir in dirs)
                 {
-                    foreach (var x in GetDirectories(dir, option))
+                    if (option == SearchOption.AllDirectories)
                     {
-                        yield return x;
+                        foreach (var x in GetDirectories(dir, option))
+                        {
+                            yield return x;
+                        }
                     }
-                }
 
-                yield return dir;
+                    yield return dir;
+                }
             }
         }
     }
